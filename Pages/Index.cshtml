@@ -1,0 +1,45 @@
+@page
+@model UnoGame.Pages.IndexModel
+@{
+    ViewData["Title"] = "UNO Game Lobby";
+}
+
+<div class="lobby-container">
+    <div class="lobby-header">
+        <h1>🎮 UNO Online</h1>
+        <p>Play UNO with your friends online!</p>
+    </div>
+
+    <div class="lobby-content">
+        <div class="lobby-section">
+            <h2>Create New Game</h2>
+            <div class="create-game-form">
+                <input type="text" id="roomName" placeholder="Enter room name" maxlength="30" />
+                <input type="text" id="playerName" placeholder="Your name" maxlength="20" />
+                <select id="maxPlayers">
+                    <option value="2">2 Players</option>
+                    <option value="3">3 Players</option>
+                    <option value="4" selected>4 Players</option>
+                    <option value="5">5 Players</option>
+                    <option value="6">6 Players</option>
+                </select>
+                <button id="createRoomBtn" class="btn btn-primary">Create Room</button>
+            </div>
+        </div>
+
+        <div class="lobby-section">
+            <h2>Join Existing Game</h2>
+            <div class="join-game-form">
+                <input type="text" id="joinPlayerName" placeholder="Your name" maxlength="20" />
+                <button id="refreshRoomsBtn" class="btn btn-secondary">Refresh Rooms</button>
+            </div>
+            <div id="availableRooms" class="rooms-list">
+                <p class="loading">Loading available rooms...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/lobby.js"></script>
+}

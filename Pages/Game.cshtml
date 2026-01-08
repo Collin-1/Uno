@@ -1,0 +1,83 @@
+@page
+@model UnoGame.Pages.GameModel
+@{
+    ViewData["Title"] = "UNO Game";
+}
+
+<div class="game-container">
+    <!-- Header with game info -->
+    <div class="game-header">
+        <div class="game-info">
+            <h2 id="roomName">UNO Game</h2>
+            <span id="gameStatus">Waiting for players...</span>
+        </div>
+        <button id="leaveGameBtn" class="btn btn-danger">Leave Game</button>
+    </div>
+
+    <!-- Other players display -->
+    <div id="otherPlayers" class="other-players">
+        <!-- Players will be dynamically added here -->
+    </div>
+
+    <!-- Game table (center area) -->
+    <div class="game-table">
+        <div class="deck-area">
+            <div id="drawPile" class="card-pile">
+                <img src="/cards/card_back.png" alt="Draw Pile" />
+                <span class="deck-count" id="deckCount">0</span>
+            </div>
+            <div id="discardPile" class="card-pile">
+                <img id="topCard" src="/cards/card_back.png" alt="Top Card" />
+            </div>
+        </div>
+        <div id="currentTurnIndicator" class="turn-indicator">
+            Waiting...
+        </div>
+    </div>
+
+    <!-- Current player's hand -->
+    <div class="player-area">
+        <div class="player-info">
+            <h3 id="yourName">Your Hand</h3>
+            <span id="yourCardCount">0 cards</span>
+        </div>
+        <div id="playerHand" class="player-hand">
+            <!-- Player's cards will be dynamically added here -->
+        </div>
+    </div>
+
+    <!-- Start game button (only visible when waiting) -->
+    <div id="startGameSection" class="start-game-section" style="display: none;">
+        <button id="startGameBtn" class="btn btn-primary btn-large">Start Game</button>
+        <p>Waiting for at least 2 players...</p>
+    </div>
+</div>
+
+<!-- Wild Color Selection Modal -->
+<div id="wildColorModal" class="modal">
+    <div class="modal-content">
+        <h3>Choose a Color</h3>
+        <div class="color-choices">
+            <button class="color-btn red" data-color="Red">Red</button>
+            <button class="color-btn blue" data-color="Blue">Blue</button>
+            <button class="color-btn green" data-color="Green">Green</button>
+            <button class="color-btn yellow" data-color="Yellow">Yellow</button>
+        </div>
+    </div>
+</div>
+
+<!-- Game Over Modal -->
+<div id="gameOverModal" class="modal">
+    <div class="modal-content">
+        <h2>🎉 Game Over!</h2>
+        <p id="winnerMessage"></p>
+        <button id="backToLobbyBtn" class="btn btn-primary">Back to Lobby</button>
+    </div>
+</div>
+
+<input type="hidden" id="roomId" value="" />
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script src="~/js/game.js"></script>
+}

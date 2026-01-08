@@ -1,0 +1,364 @@
+// Game functionality with SignalR
+const urlParams = new URLSearchParams(window.location.search);
+const roomId = urlParams.get("room");
+const playerName = sessionStorage.getItem("playerName") || "Player";
+
+let connection;
+let currentHand = [];
+let isMyTurn = false;
+let pendingWildCard = null;
+
+// Initialize SignalR connection
+async function initializeGame() {
+  connection = new signalR.HubConnectionBuilder()
+    .withUrl("/gameHub")
+    .withAutomaticReconnect()
+    .build();
+
+  // Set up event handlers
+  setupSignalRHandlers();
+
+  try {
+    await connection.start();
+    console.log("Connected to game hub");
+
+    // Join the room
+    await connection.invoke("JoinRoom", roomId, playerName);
+  } catch (error) {
+    console.error("Error connecting:", error);
+    alert("Failed to connect to game server");
+  }
+}
+
+function setupSignalRHandlers() {
+  // Successfully joined room
+  connection.on("JoinedRoom", (roomId, playerName) => {
+    console.log(`Joined room ${roomId} as ${playerName}`);
+    document.getElementById("yourName").textContent = playerName;
+  });
+
+  // Game state updated
+  connection.on("GameStateUpdated", (gameState) => {
+    updateGameState(gameState);
+  });
+
+  // Player's hand updated
+  connection.on("UpdateHand", (playerInfo) => {
+    updatePlayerHand(playerInfo.hand);
+  });
+
+  // Card was played
+  connection.on("CardPlayed", (playerName, card) => {
+    console.log(`${playerName} played a card`);
+    updateTopCard(card);
+  });
+
+  // Cards were drawn
+  connection.on("CardsDrawn", (cards) => {
+    console.log("Drew cards:", cards);
+    // Cards will be added via UpdateHand event
+  });
+
+  // Player drew cards
+  connection.on("PlayerDrew", (playerName, count) => {
+    showNotification(`${playerName} drew ${count} card(s)`);
+  });
+
+  // Player joined
+  connection.on("PlayerJoined", (playerName, playerCount) => {
+    showNotification(`${playerName} joined the game`);
+  });
+
+  // Player left
+  connection.on("PlayerLeft", (playerName) => {
+    showNotification(`${playerName} left the game`);
+  });
+
+  // Game started
+  connection.on("GameStarted", () => {
+    showNotification("Game started!");
+    document.getElementById("startGameSection").style.display = "none";
+  });
+
+  // Game over
+  connection.on("GameOver", (winnerName) => {
+    showGameOver(winnerName);
+  });
+
+  // Error messages
+  connection.on("Error", (message) => {
+    showNotification(message, true);
+  });
+}
+
+function updateGameState(gameState) {
+  console.log("Game state:", gameState);
+  console.log("Game Status:", gameState.status);
+  console.log("Players:", gameState.players);
+
+  // Update room name
+  document.getElementById("roomName").textContent = gameState.roomName;
+
+  // Update game status
+  const statusText =
+    gameState.status === "InProgress"
+      ? `Playing - ${gameState.direction}`
+      : gameState.status;
+  document.getElementById("gameStatus").textContent = statusText;
+
+  // Update top card
+  if (gameState.topCard) {
+    updateTopCard(gameState.topCard);
+  }
+
+  // Update deck count
+  document.getElementById("deckCount").textContent = gameState.deckCount;
+
+  // Update current turn indicator
+  const currentPlayerName = gameState.currentPlayerName || "";
+  isMyTurn = currentPlayerName === playerName;
+
+  const turnIndicator = document.getElementById("currentTurnIndicator");
+  if (gameState.status === "InProgress") {
+    turnIndicator.textContent = isMyTurn
+      ? "Your Turn!"
+      : `${currentPlayerName}'s Turn`;
+    turnIndicator.className = isMyTurn
+      ? "turn-indicator my-turn"
+      : "turn-indicator";
+  } else {
+    turnIndicator.textContent = "Waiting for game to start...";
+    turnIndicator.className = "turn-indicator";
+  }
+
+  // Update other players
+  updateOtherPlayers(gameState.players);
+
+  // Show/hide start button based on game status
+  const startGameSection = document.getElementById("startGameSection");
+  console.log("Start game section element:", startGameSection);
+  console.log("Should show start button?", gameState.status === "Waiting");
+
+  if (gameState.status === "Waiting") {
+    startGameSection.style.display = "block";
+    console.log("Showing start button");
+  } else {
+    startGameSection.style.display = "none";
+    console.log("Hiding start button");
+  }
+
+  // Enable/disable draw pile based on turn
+  updateDrawPileState();
+}
+
+function updateTopCard(card) {
+  const topCardImg = document.getElementById("topCard");
+  if (card && card.imageFile) {
+    topCardImg.src = `/cards/${card.imageFile}`;
+    topCardImg.alt = `${card.color} ${card.type}`;
+  }
+}
+
+function updatePlayerHand(hand) {
+  currentHand = hand;
+  const handContainer = document.getElementById("playerHand");
+  handContainer.innerHTML = "";
+
+  document.getElementById(
+    "yourCardCount"
+  ).textContent = `${hand.length} card(s)`;
+
+  hand.forEach((card) => {
+    const cardElement = createCardElement(card);
+    handContainer.appendChild(cardElement);
+  });
+
+  updateDrawPileState();
+}
+
+function createCardElement(card) {
+  const cardDiv = document.createElement("div");
+  cardDiv.className = "card";
+  cardDiv.dataset.cardId = card.id;
+
+  const cardImg = document.createElement("img");
+  cardImg.src = `/cards/${card.imageFile}`;
+  cardImg.alt = `${card.color} ${card.type}`;
+
+  cardDiv.appendChild(cardImg);
+
+  // Add click handler to play card
+  cardDiv.addEventListener("click", () => playCard(card));
+
+  return cardDiv;
+}
+
+function updateOtherPlayers(players) {
+  const container = document.getElementById("otherPlayers");
+  container.innerHTML = "";
+
+  players.forEach((player) => {
+    if (player.name !== playerName) {
+      const playerDiv = document.createElement("div");
+      playerDiv.className = "other-player";
+      if (player.isCurrentPlayer) {
+        playerDiv.classList.add("active");
+      }
+
+      playerDiv.innerHTML = `
+        <div class="player-name">${escapeHtml(player.name)}</div>
+        <div class="player-cards">${player.cardCount} 🃏</div>
+            `;
+
+      container.appendChild(playerDiv);
+    }
+  });
+}
+
+async function playCard(card) {
+  if (!isMyTurn) {
+    showNotification("It's not your turn!", true);
+    return;
+  }
+
+  // If it's a wild card, show color picker
+  if (card.type === "Wild" || card.type === "WildDrawFour") {
+    pendingWildCard = card;
+    showWildColorModal();
+    return;
+  }
+
+  // Play regular card
+  try {
+    await connection.invoke("PlayCard", roomId, card.id, null);
+  } catch (error) {
+    console.error("Error playing card:", error);
+    showNotification("Failed to play card", true);
+  }
+}
+
+async function playWildCard(color) {
+  if (!pendingWildCard) return;
+
+  try {
+    await connection.invoke("PlayCard", roomId, pendingWildCard.id, color);
+    pendingWildCard = null;
+    hideWildColorModal();
+  } catch (error) {
+    console.error("Error playing wild card:", error);
+    showNotification("Failed to play card", true);
+  }
+}
+
+async function drawCard() {
+  if (!isMyTurn) {
+    showNotification("It's not your turn!", true);
+    return;
+  }
+
+  try {
+    await connection.invoke("DrawCard", roomId);
+  } catch (error) {
+    console.error("Error drawing card:", error);
+    showNotification("Failed to draw card", true);
+  }
+}
+
+async function startGame() {
+  try {
+    await connection.invoke("StartGame", roomId);
+  } catch (error) {
+    console.error("Error starting game:", error);
+    showNotification("Failed to start game", true);
+  }
+}
+
+async function leaveGame() {
+  try {
+    await connection.invoke("LeaveRoom", roomId);
+    window.location.href = "/";
+  } catch (error) {
+    console.error("Error leaving game:", error);
+    window.location.href = "/";
+  }
+}
+
+function updateDrawPileState() {
+  const drawPile = document.getElementById("drawPile");
+  if (isMyTurn) {
+    drawPile.classList.add("clickable");
+    drawPile.onclick = drawCard;
+  } else {
+    drawPile.classList.remove("clickable");
+    drawPile.onclick = null;
+  }
+}
+
+function showWildColorModal() {
+  const modal = document.getElementById("wildColorModal");
+  modal.style.display = "flex";
+}
+
+function hideWildColorModal() {
+  const modal = document.getElementById("wildColorModal");
+  modal.style.display = "none";
+  pendingWildCard = null;
+}
+
+function showGameOver(winnerName) {
+  const modal = document.getElementById("gameOverModal");
+  const message = document.getElementById("winnerMessage");
+  message.textContent = winnerName.includes("wins")
+    ? winnerName
+    : `${winnerName} wins!`;
+  modal.style.display = "flex";
+}
+
+function showNotification(message, isError = false) {
+  // Simple notification system
+  const notification = document.createElement("div");
+  notification.className = isError ? "notification error" : "notification";
+  notification.textContent = message;
+  document.body.appendChild(notification);
+
+  setTimeout(() => {
+    notification.classList.add("show");
+  }, 10);
+
+  setTimeout(() => {
+    notification.classList.remove("show");
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
+}
+
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Event listeners
+document.getElementById("startGameBtn").addEventListener("click", startGame);
+document.getElementById("leaveGameBtn").addEventListener("click", leaveGame);
+document.getElementById("backToLobbyBtn").addEventListener("click", () => {
+  window.location.href = "/";
+});
+
+// Wild color selection
+document.querySelectorAll(".color-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const color = btn.dataset.color;
+    playWildCard(color);
+  });
+});
+
+// Close modals when clicking outside
+window.addEventListener("click", (e) => {
+  const wildModal = document.getElementById("wildColorModal");
+  if (e.target === wildModal) {
+    hideWildColorModal();
+  }
+});
+
+// Initialize when page loads
+initializeGame();
