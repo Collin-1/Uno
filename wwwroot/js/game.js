@@ -375,15 +375,25 @@ window.addEventListener("click", (e) => {
 // Voice chat functions
 async function initializeVoiceChat(gameState) {
   if (!voiceChat) {
-    console.log("Initializing voice chat...");
-    voiceChat = new VoiceChat(connection, roomId);
-    const success = await voiceChat.initialize();
-    console.log("Voice chat initialization:", success ? "success" : "failed");
+    console.log("Initializing voice chat...", gameState);
+    try {
+      voiceChat = new VoiceChat(connection, roomId);
+      const success = await voiceChat.initialize();
+      console.log("Voice chat initialization:", success ? "success" : "failed");
 
-    if (success && gameState.players) {
-      const playerConnectionIds = gameState.players.map((p) => p.connectionId);
-      console.log("Connecting to peers:", playerConnectionIds);
-      await voiceChat.connectToAllPeers(playerConnectionIds);
+      if (success && gameState.players) {
+        const playerConnectionIds = gameState.players.map(
+          (p) => p.connectionId
+        );
+        console.log("Connecting to peers:", playerConnectionIds);
+        await voiceChat.connectToAllPeers(playerConnectionIds);
+      } else if (!success) {
+        // If initialization failed, clear voiceChat
+        voiceChat = null;
+      }
+    } catch (error) {
+      console.error("Error initializing voice chat:", error);
+      voiceChat = null;
     }
   } else {
     console.log("Voice chat already initialized");
@@ -391,10 +401,14 @@ async function initializeVoiceChat(gameState) {
 }
 
 function toggleMicrophone() {
+  console.log("Toggle microphone clicked. VoiceChat:", voiceChat);
   if (voiceChat) {
     voiceChat.toggleMute();
   } else {
-    alert("Voice chat is not initialized. Start the game first.");
+    console.log("Voice chat not initialized, attempting to initialize...");
+    alert(
+      "Voice chat is not initialized. Make sure you've allowed microphone access."
+    );
   }
 }
 

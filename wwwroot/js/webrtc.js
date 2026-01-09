@@ -20,6 +20,7 @@ class VoiceChat {
 
   async initialize() {
     try {
+      console.log("Requesting microphone access...");
       // Request microphone access
       this.localStream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -30,12 +31,25 @@ class VoiceChat {
         video: false,
       });
 
-      console.log("Microphone access granted");
+      console.log("Microphone access granted", this.localStream);
       this.updateMicButton(true);
       return true;
     } catch (error) {
       console.error("Failed to get microphone access:", error);
-      alert("Microphone access denied. Voice chat will not be available.");
+      if (
+        error.name === "NotAllowedError" ||
+        error.name === "PermissionDeniedError"
+      ) {
+        alert(
+          "Microphone access denied. Please allow microphone access to use voice chat."
+        );
+      } else if (error.name === "NotFoundError") {
+        alert(
+          "No microphone found. Please connect a microphone to use voice chat."
+        );
+      } else {
+        alert("Failed to access microphone: " + error.message);
+      }
       return false;
     }
   }
