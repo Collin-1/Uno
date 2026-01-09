@@ -1,0 +1,48 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Build results
+bin/
+obj/
+out/
+publish/
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Development files
+*.swp
+*.*~
+project.lock.json
+.DS_Store
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+
+# Test results
+TestResults/
+*.trx
+
+# Documentation
+*.md
+!README.md
+
+# Node modules (if any)
+node_modules/
+
+# Logs
+*.log
+logs/
+
+# OS files
+Thumbs.db

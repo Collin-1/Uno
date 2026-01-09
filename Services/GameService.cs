@@ -265,21 +265,24 @@ public class GameService
         var (isValid, errorMessage) = ValidateCardPlay(room, player, cardId);
         if (!isValid) return (false, errorMessage);
 
+        // If it's a wild card ensure a color was selected before mutating state
+        if ((card.Type == CardType.Wild || card.Type == CardType.WildDrawFour) && (wildColor == null || wildColor == CardColor.Wild))
+        {
+            return (false, "Must select a color for wild card");
+        }
+
         // Remove card from player's hand and add to discard pile
         player.RemoveCard(cardId);
         room.DiscardPile.Add(card);
 
-        // Handle wild color selection
+        // Handle wild color selection (already validated above)
         if (card.Type == CardType.Wild || card.Type == CardType.WildDrawFour)
         {
-            if (wildColor == null || wildColor == CardColor.Wild)
-            {
-                return (false, "Must select a color for wild card");
-            }
             room.CurrentWildColor = wildColor;
         }
         else
         {
+            // Clear any previously set wild color when a non-wild card is played
             room.CurrentWildColor = null;
         }
 

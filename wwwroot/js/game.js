@@ -221,8 +221,12 @@ async function playCard(card) {
     return;
   }
 
-  // If it's a wild card, show color picker
-  if (card.type === "Wild" || card.type === "WildDrawFour") {
+  // If it's a wild card, show color picker.
+  // Some card objects may carry type as string or may use imageFile naming — check both robustly.
+  const isWildByType = typeof card.type === "string" && /wild/i.test(card.type);
+  const isWildByImage =
+    typeof card.imageFile === "string" && /wild/i.test(card.imageFile);
+  if (isWildByType || isWildByImage) {
     pendingWildCard = card;
     showWildColorModal();
     return;

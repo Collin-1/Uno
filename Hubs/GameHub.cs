@@ -102,9 +102,9 @@ public class GameHub : Hub
             return;
         }
 
-        // Parse wild color if provided
+        // Parse wild color if provided (case-insensitive)
         CardColor? selectedColor = null;
-        if (!string.IsNullOrEmpty(wildColor) && Enum.TryParse<CardColor>(wildColor, out var color))
+        if (!string.IsNullOrEmpty(wildColor) && Enum.TryParse<CardColor>(wildColor, ignoreCase: true, out var color))
         {
             selectedColor = color;
         }
