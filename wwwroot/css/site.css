@@ -205,6 +205,42 @@ main {
   opacity: 0.9;
 }
 
+.header-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.mic-button {
+  padding: 10px 20px;
+  font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-weight: 600;
+}
+
+.mic-button.mic-on {
+  background: white;
+  color: #667eea;
+}
+
+.mic-button.mic-on:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.4);
+}
+
+.mic-button.mic-off {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+.mic-button.mic-off:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 87, 108, 0.4);
+}
+
 /* Other Players */
 .other-players {
   display: flex;

@@ -290,4 +290,20 @@ public class GameHub : Hub
 
         await Clients.Caller.SendAsync("AvailableRooms", roomList);
     }
+
+    // WebRTC Signaling
+    public async Task SendWebRTCOffer(string roomId, string targetConnectionId, string offer)
+    {
+        await Clients.Client(targetConnectionId).SendAsync("ReceiveWebRTCOffer", Context.ConnectionId, offer);
+    }
+
+    public async Task SendWebRTCAnswer(string roomId, string targetConnectionId, string answer)
+    {
+        await Clients.Client(targetConnectionId).SendAsync("ReceiveWebRTCAnswer", Context.ConnectionId, answer);
+    }
+
+    public async Task SendICECandidate(string roomId, string targetConnectionId, string candidate)
+    {
+        await Clients.Client(targetConnectionId).SendAsync("ReceiveICECandidate", Context.ConnectionId, candidate);
+    }
 }

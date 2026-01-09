@@ -7,6 +7,7 @@ let connection;
 let currentHand = [];
 let isMyTurn = false;
 let pendingWildCard = null;
+let voiceChat = null;
 
 // Initialize SignalR connection
 async function initializeGame() {
@@ -51,6 +52,13 @@ function setupSignalRHandlers() {
   connection.on("CardPlayed", (playerName, card) => {
     console.log(`${playerName} played a card`);
     updateTopCard(card);
+  });
+
+  // Game started
+  connection.on("GameStarted", (gameState) => {
+    console.log("Game started!", gameState);
+    updateGameState(gameState);
+    initializeVoiceChat(gameState);
   });
 
   // Cards were drawn
@@ -363,6 +371,39 @@ window.addEventListener("click", (e) => {
     hideWildColorModal();
   }
 });
+
+// Voice chat functions
+async function initializeVoiceChat(gameState) {
+  if (!voiceChat) {
+    voiceChat = new VoiceChat(connection, roomId);
+    const success = await voiceChat.initialize();
+
+    if (success && gameState.players) {
+      const playerConnectionIds = gameState.players.map((p) => p.connectionId);
+      await voiceChat.connectToAllPeers(playerConnectionIds);
+    }
+  }
+}
+
+function toggleMicrophone() {
+  if (voiceChat) {
+    voiceChat.toggleMute();
+  } else {
+    alert("Voice chat is not initialized. Start the game first.");
+  }
+}
+
+// Update leave game to disconnect voice
+const originalBackToLobby = document.getElementById("backToLobbyBtn")?.onclick;
+if (document.getElementById("backToLobbyBtn")) {
+  document.getElementById("backToLobbyBtn").onclick = function () {
+    if (voiceChat) {
+      voiceChat.disconnectAll();
+      voiceChat = null;
+    }
+    if (originalBackToLobby) originalBackToLobby();
+  };
+}
 
 // Initialize when page loads
 initializeGame();
