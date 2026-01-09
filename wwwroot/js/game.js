@@ -41,6 +41,10 @@ function setupSignalRHandlers() {
   // Game state updated
   connection.on("GameStateUpdated", (gameState) => {
     updateGameState(gameState);
+    // Initialize voice chat if game is playing and not already initialized
+    if (gameState.status === "Playing" && !voiceChat) {
+      initializeVoiceChat(gameState);
+    }
   });
 
   // Player's hand updated
@@ -57,6 +61,8 @@ function setupSignalRHandlers() {
   // Game started
   connection.on("GameStarted", (gameState) => {
     console.log("Game started!", gameState);
+    showNotification("Game started!");
+    document.getElementById("startGameSection").style.display = "none";
     updateGameState(gameState);
     initializeVoiceChat(gameState);
   });
@@ -80,12 +86,6 @@ function setupSignalRHandlers() {
   // Player left
   connection.on("PlayerLeft", (playerName) => {
     showNotification(`${playerName} left the game`);
-  });
-
-  // Game started
-  connection.on("GameStarted", () => {
-    showNotification("Game started!");
-    document.getElementById("startGameSection").style.display = "none";
   });
 
   // Game over
@@ -375,13 +375,18 @@ window.addEventListener("click", (e) => {
 // Voice chat functions
 async function initializeVoiceChat(gameState) {
   if (!voiceChat) {
+    console.log("Initializing voice chat...");
     voiceChat = new VoiceChat(connection, roomId);
     const success = await voiceChat.initialize();
+    console.log("Voice chat initialization:", success ? "success" : "failed");
 
     if (success && gameState.players) {
       const playerConnectionIds = gameState.players.map((p) => p.connectionId);
+      console.log("Connecting to peers:", playerConnectionIds);
       await voiceChat.connectToAllPeers(playerConnectionIds);
     }
+  } else {
+    console.log("Voice chat already initialized");
   }
 }
 
