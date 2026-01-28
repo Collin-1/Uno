@@ -129,6 +129,7 @@ public class GameRoom
             CurrentWildColor = CurrentWildColor?.ToString(),
             Players = Players.Select((p, index) => new
             {
+                p.ConnectionId,
                 p.Name,
                 p.CardCount,
                 IsCurrentPlayer = index == CurrentPlayerIndex
