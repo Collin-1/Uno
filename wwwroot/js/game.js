@@ -41,10 +41,7 @@ function setupSignalRHandlers() {
   // Game state updated
   connection.on("GameStateUpdated", (gameState) => {
     updateGameState(gameState);
-    // Initialize voice chat if game is playing and not already initialized
-    if (gameState.status === "Playing" && !voiceChat) {
-      initializeVoiceChat(gameState);
-    }
+    // Voice chat initialization is manual via button click
   });
 
   // Player's hand updated
@@ -64,7 +61,7 @@ function setupSignalRHandlers() {
     showNotification("Game started!");
     document.getElementById("startGameSection").style.display = "none";
     updateGameState(gameState);
-    initializeVoiceChat(gameState);
+    // Don't auto-initialize voice chat - let user click the button
   });
 
   // Cards were drawn
@@ -103,6 +100,9 @@ function updateGameState(gameState) {
   console.log("Game state:", gameState);
   console.log("Game Status:", gameState.status);
   console.log("Players:", gameState.players);
+
+  // Store globally for voice chat
+  window.currentGameState = gameState;
 
   // Update room name
   document.getElementById("roomName").textContent = gameState.roomName;
@@ -400,16 +400,58 @@ async function initializeVoiceChat(gameState) {
   }
 }
 
-function toggleMicrophone() {
+async function toggleMicrophone() {
   console.log("Toggle microphone clicked. VoiceChat:", voiceChat);
-  if (voiceChat) {
-    voiceChat.toggleMute();
+
+  if (!voiceChat) {
+    // First click - initialize voice chat
+    console.log("Initializing voice chat from button click...");
+    const micBtn = document.getElementById("mic-toggle");
+    if (micBtn) {
+      micBtn.textContent = "⏳ Requesting...";
+      micBtn.disabled = true;
+    }
+
+    try {
+      voiceChat = new VoiceChat(connection, roomId);
+      const success = await voiceChat.initialize();
+
+      if (success) {
+        // Get current game state to connect to peers
+        const gameState = await getGameState();
+        if (gameState && gameState.players) {
+          const playerConnectionIds = gameState.players.map(
+            (p) => p.connectionId
+          );
+          await voiceChat.connectToAllPeers(playerConnectionIds);
+        }
+        showNotification("Voice chat enabled!");
+      } else {
+        voiceChat = null;
+      }
+    } catch (error) {
+      console.error("Error initializing voice chat:", error);
+      voiceChat = null;
+    }
+
+    if (micBtn) {
+      micBtn.disabled = false;
+      if (!voiceChat) {
+        micBtn.textContent = "🎤 Enable Voice";
+      }
+    }
   } else {
-    console.log("Voice chat not initialized, attempting to initialize...");
-    alert(
-      "Voice chat is not initialized. Make sure you've allowed microphone access."
-    );
+    // Already initialized - just toggle mute
+    voiceChat.toggleMute();
   }
+}
+
+// Helper to get current game state
+function getGameState() {
+  return new Promise((resolve) => {
+    // Store the current game state in a global variable when updated
+    resolve(window.currentGameState || null);
+  });
 }
 
 // Update leave game to disconnect voice
