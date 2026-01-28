@@ -530,6 +530,33 @@ main {
   background: #f44336;
 }
 
+.wild-color-notification {
+  background: #2196f3;
+  font-weight: bold;
+}
+
+.wild-color-indicator {
+  font-size: 1.5em;
+  margin-right: 5px;
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+}
+
+.wild-color-indicator.red {
+  color: #e74c3c;
+}
+
+.wild-color-indicator.blue {
+  color: #3498db;
+}
+
+.wild-color-indicator.green {
+  color: #2ecc71;
+}
+
+.wild-color-indicator.yellow {
+  color: #f1c40f;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .lobby-content {
