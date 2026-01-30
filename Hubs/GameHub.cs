@@ -139,6 +139,12 @@ public class GameHub : Hub
             card?.Number,
             ImageFile = card?.GetImageFileName()
         });
+
+        // If a wild card was played with a color, notify all players
+        if (selectedColor.HasValue && (card?.Type == CardType.Wild || card?.Type == CardType.WildDrawFour))
+        {
+            await Clients.Group(roomId).SendAsync("WildColorChosen", player.Name, selectedColor.Value.ToString());
+        }
     }
 
     /// <summary>

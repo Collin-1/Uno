@@ -94,6 +94,11 @@ function setupSignalRHandlers() {
   connection.on("Error", (message) => {
     showNotification(message, true);
   });
+
+  // Wild color was chosen
+  connection.on("WildColorChosen", (playerName, color) => {
+    showWildColorNotification(playerName, color);
+  });
 }
 
 function updateGameState(gameState) {
@@ -172,9 +177,8 @@ function updatePlayerHand(hand) {
   const handContainer = document.getElementById("playerHand");
   handContainer.innerHTML = "";
 
-  document.getElementById(
-    "yourCardCount"
-  ).textContent = `${hand.length} card(s)`;
+  document.getElementById("yourCardCount").textContent =
+    `${hand.length} card(s)`;
 
   hand.forEach((card) => {
     const cardElement = createCardElement(card);
@@ -340,7 +344,32 @@ function showNotification(message, isError = false) {
   setTimeout(() => {
     notification.classList.remove("show");
     setTimeout(() => notification.remove(), 300);
-  }, 3000);
+  }, 5000);
+}
+
+function showWildColorNotification(playerName, color) {
+  const notification = document.createElement("div");
+  notification.className = "notification wild-color-notification";
+
+  const colorIndicator = document.createElement("span");
+  colorIndicator.className = `wild-color-indicator ${color.toLowerCase()}`;
+  colorIndicator.textContent = "●";
+
+  const text = document.createElement("span");
+  text.textContent = ` ${playerName} chose ${color}!`;
+
+  notification.appendChild(colorIndicator);
+  notification.appendChild(text);
+  document.body.appendChild(notification);
+
+  setTimeout(() => {
+    notification.classList.add("show");
+  }, 10);
+
+  setTimeout(() => {
+    notification.classList.remove("show");
+    setTimeout(() => notification.remove(), 300);
+  }, 5000);
 }
 
 function escapeHtml(text) {
@@ -383,7 +412,7 @@ async function initializeVoiceChat(gameState) {
 
       if (success && gameState.players) {
         const playerConnectionIds = gameState.players.map(
-          (p) => p.connectionId
+          (p) => p.connectionId,
         );
         console.log("Connecting to peers:", playerConnectionIds);
         await voiceChat.connectToAllPeers(playerConnectionIds);
@@ -421,7 +450,7 @@ async function toggleMicrophone() {
         const gameState = await getGameState();
         if (gameState && gameState.players) {
           const playerConnectionIds = gameState.players.map(
-            (p) => p.connectionId
+            (p) => p.connectionId,
           );
           await voiceChat.connectToAllPeers(playerConnectionIds);
         }
