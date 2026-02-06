@@ -41,11 +41,11 @@ class VoiceChat {
         error.name === "PermissionDeniedError"
       ) {
         alert(
-          "Microphone access denied. Please allow microphone access to use voice chat."
+          "Microphone access denied. Please allow microphone access to use voice chat.",
         );
       } else if (error.name === "NotFoundError") {
         alert(
-          "No microphone found. Please connect a microphone to use voice chat."
+          "No microphone found. Please connect a microphone to use voice chat.",
         );
       } else {
         alert("Failed to access microphone: " + error.message);
@@ -55,13 +55,28 @@ class VoiceChat {
   }
 
   setupSignalRHandlers() {
+    // Handle when another player joins voice chat
+    this.connection.on(
+      "PlayerJoinedVoiceChat",
+      async (newPlayerConnectionId) => {
+        console.log("Player joined voice chat:", newPlayerConnectionId);
+        // Initiate connection to the new player
+        if (
+          this.localStream &&
+          newPlayerConnectionId !== this.connection.connectionId
+        ) {
+          await this.connectToPeer(newPlayerConnectionId);
+        }
+      },
+    );
+
     // Handle incoming WebRTC offers
     this.connection.on(
       "ReceiveWebRTCOffer",
       async (senderConnectionId, offer) => {
         console.log("Received WebRTC offer from:", senderConnectionId);
         await this.handleOffer(senderConnectionId, offer);
-      }
+      },
     );
 
     // Handle incoming WebRTC answers
@@ -70,7 +85,7 @@ class VoiceChat {
       async (senderConnectionId, answer) => {
         console.log("Received WebRTC answer from:", senderConnectionId);
         await this.handleAnswer(senderConnectionId, answer);
-      }
+      },
     );
 
     // Handle ICE candidates
@@ -79,7 +94,7 @@ class VoiceChat {
       async (senderConnectionId, candidate) => {
         console.log("Received ICE candidate from:", senderConnectionId);
         await this.handleICECandidate(senderConnectionId, candidate);
-      }
+      },
     );
   }
 
@@ -112,7 +127,7 @@ class VoiceChat {
             "SendICECandidate",
             this.roomId,
             targetConnectionId,
-            JSON.stringify(event.candidate)
+            JSON.stringify(event.candidate),
           )
           .catch((err) => console.error("Error sending ICE candidate:", err));
       }
@@ -122,7 +137,7 @@ class VoiceChat {
     pc.onconnectionstatechange = () => {
       console.log(
         `Connection state with ${targetConnectionId}:`,
-        pc.connectionState
+        pc.connectionState,
       );
       if (
         pc.connectionState === "disconnected" ||
@@ -147,7 +162,7 @@ class VoiceChat {
         "SendWebRTCOffer",
         this.roomId,
         targetConnectionId,
-        JSON.stringify(offer)
+        JSON.stringify(offer),
       );
     } catch (error) {
       console.error("Error creating offer:", error);
@@ -168,7 +183,7 @@ class VoiceChat {
         "SendWebRTCAnswer",
         this.roomId,
         senderConnectionId,
-        JSON.stringify(answer)
+        JSON.stringify(answer),
       );
     } catch (error) {
       console.error("Error handling offer:", error);

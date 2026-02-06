@@ -416,6 +416,9 @@ async function initializeVoiceChat(gameState) {
         );
         console.log("Connecting to peers:", playerConnectionIds);
         await voiceChat.connectToAllPeers(playerConnectionIds);
+
+        // Notify other players that we joined voice chat
+        await connection.invoke("NotifyVoiceChatJoined", roomId);
       } else if (!success) {
         // If initialization failed, clear voiceChat
         voiceChat = null;
@@ -453,6 +456,9 @@ async function toggleMicrophone() {
             (p) => p.connectionId,
           );
           await voiceChat.connectToAllPeers(playerConnectionIds);
+
+          // Notify other players that we joined voice chat
+          await connection.invoke("NotifyVoiceChatJoined", roomId);
         }
         showNotification("Voice chat enabled!");
       } else {

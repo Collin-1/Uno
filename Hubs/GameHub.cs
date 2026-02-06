@@ -312,4 +312,10 @@ public class GameHub : Hub
     {
         await Clients.Client(targetConnectionId).SendAsync("ReceiveICECandidate", Context.ConnectionId, candidate);
     }
+
+    public async Task NotifyVoiceChatJoined(string roomId)
+    {
+        // Notify all other players in the room that this player has joined voice chat
+        await Clients.OthersInGroup(roomId).SendAsync("PlayerJoinedVoiceChat", Context.ConnectionId);
+    }
 }
